@@ -1,0 +1,14 @@
+**/__pycache__
+**/*.py[oc]
+**/cdk/
+**/cdk.out/
+**/.venv/
+**/tests/
+**/.gitignore
+**/.git/
+cdk.json
+Dockerfile
+requirements.txt
+requirements-dev.txt
+
+.dockerignore

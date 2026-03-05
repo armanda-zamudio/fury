@@ -1,0 +1,24 @@
+[project]
+name = "fury"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [    
+    "ih",
+    "proxy",
+]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+ih = { workspace = true }
+proxy = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "xlsxwriter==3.2.9", 
+    "pandas==2.3.3"    
+]
+docker = [
+    "awslambdaric>=3.1.1",
+]

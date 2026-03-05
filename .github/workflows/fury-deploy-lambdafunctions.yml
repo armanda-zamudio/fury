@@ -1,0 +1,79 @@
+name: deploy-lambda-functions
+
+on:
+  # push:
+  #   branches:
+  #   - main
+  #   - master
+  workflow_dispatch:
+    inputs:
+      cdk_command:
+        type: choice
+        description: "The command to pass to CDK. Default deploy"
+        default: deploy
+        required: true
+        options:
+        - deploy
+        - synth
+        - destroy
+      cdk_region:
+        description: "To which AWS region shall we deploy?"
+        default: "us-east-1"
+        required: true
+        type: string
+      aws_environment:
+        type: choice
+        description: "The environment to pass to CDK. Default production"
+        default: production
+        required: true
+        options:
+        - production
+        - test
+        - development        
+
+permissions:
+  id-token: write # Required for requesting the JWT
+  contents: read # Required for actions/checkout
+
+jobs:
+  fury_lambdafunctions_cdk_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get Your Code
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3     
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3            
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          role-session-name: Github-Actions-Role
+          aws-region: ${{ inputs.cdk_region }}
+
+      - name: Use NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v3
+
+      - name: Setup python
+        run: uv python install 3.14
+
+      - name: Install python requirements
+        run: uv sync --no-group dev
+
+      - name: CDK Deploy
+        if: ${{ inputs.cdk_command != 'destroy' }}     
+        run: uv run --directory packages/fury-cdk/ cdk ${{ inputs.cdk_command }} fury-stack --context aws-environment=${{ inputs.aws_environment}}  --context ${{ inputs.cdk_region }} --require-approval never 
+      - name: CDK Destroy
+        if: ${{ inputs.cdk_command == 'destroy' }}     
+        run: uv run --directory packages/fury-cdk/ cdk destroy fury-stack --context aws-environment=${{ inputs.aws_environment}}  --context ${{ inputs.cdk_region }} --force 
